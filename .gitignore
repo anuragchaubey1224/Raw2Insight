@@ -1,0 +1,243 @@
+# ========================================
+# Python
+# ========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ========================================
+# Virtual Environments
+# ========================================
+venv/
+venv_auto/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# ========================================
+# IDE & Editors
+# ========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.code-workspace
+
+# ========================================
+# Tests & Debug Files (Local Development Only)
+# ========================================
+backend/tests/
+tests/
+*_test.py
+test_*.py
+test_*.txt
+debug_*.py
+check_*.py
+fix_*.py
+clear_*.py
+simple_*.py
+find_*.py
+coordinate_parser.py
+installed_packages.txt
+
+# ========================================
+# Temporary Files & Processing Data
+# ========================================
+backend/tmp/
+tmp/
+*.tmp
+*.cache
+
+# ========================================
+# Dataset Files (Large - Exclude from Deployment)
+# ========================================
+dataset/
+dataset/raw/
+dataset/images/
+dataset/labels/
+dataset/labels_raw/
+dataset/intermediate/
+debug_vis/
+runs/
+
+# ========================================
+# Model Files (Large - Exclude from Deployment)
+# ========================================
+*.pt
+*.pth
+*.h5
+*.onnx
+*.pb
+models/*.pt
+models/*.pth
+backend/models/*.pt
+!backend/models/table_detector_best.pt
+
+# ========================================
+# Data Folder (User Data & History)
+# ========================================
+backend/data/
+data/
+backend/data/*.db
+backend/data/history/
+
+# ========================================
+# Database Files
+# ========================================
+*.db
+*.sqlite
+*.sqlite3
+autodoc.db
+backend/data/autodoc.db
+
+# ========================================
+# Environment Variables (CRITICAL - Never Commit)
+# ========================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.bak
+*.env
+secrets.json
+credentials.json
+
+# ========================================
+# Logs
+# ========================================
+*.log
+logs/
+backend/logs/
+backend/app.log
+app.log
+
+# ========================================
+# Node.js & Frontend
+# ========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+
+# Next.js
+.next/
+out/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+frontend/coverage/
+frontend/build/
+
+# ========================================
+# OS Files
+# ========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ========================================
+# Uploaded Files & Processing Outputs
+# ========================================
+uploads/
+uploaded_files/
+backend/tmp/uploads/
+backend/tmp/preprocessed/
+backend/tmp/results/
+backend/tmp/job_status.json
+
+# Processing outputs
+*.json.tmp
+job_status.json
+processing_summary.json
+phase9_evaluation_report.json
+
+# ========================================
+# Backup Files
+# ========================================
+*.bak
+*.swp
+*~
+*.old
+*.orig
+
+# ========================================
+# Testing & Coverage
+# ========================================
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ========================================
+# Documentation Build
+# ========================================
+docs/_build/
+site/
+_build/
+
+# ========================================
+# Compressed Files
+# ========================================
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# ========================================
+# Jupyter Notebook
+# ========================================
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# ========================================
+# Docker
+# ========================================
+docker-compose.override.yml
+
+# ========================================
+# Misc Development Files
+# ========================================
+*.cache
+images.cache
+admin_verify.html
+download_models.py
+validate_*.py
+run_*.bat
+run_*.sh
+*.ps1
