@@ -49,7 +49,7 @@ export const getJobStatus = async (jobId) => {
 // Get processing results
 export const getResults = async (jobId) => {
   try {
-    const response = await apiClient.get(`/results/${jobId}`)
+    const response = await apiClient.get(`/result/${jobId}`)
     return response.data
   } catch (error) {
     throw new Error(error.response?.data?.detail || 'Failed to get results')
@@ -59,7 +59,7 @@ export const getResults = async (jobId) => {
 // Save extracted data
 export const saveExtractedData = async (jobId, data) => {
   try {
-    const response = await apiClient.patch(`/results/${jobId}/save`, data)
+    const response = await apiClient.patch(`/result/${jobId}/save`, data)
     return response.data
   } catch (error) {
     throw new Error(error.response?.data?.detail || 'Failed to save data')
