@@ -35,6 +35,7 @@ slowapi>=0.1.8
 
 # Database
 sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0  # PostgreSQL adapter for production
 
 # Authentication & Security
 pyjwt>=2.6.0
