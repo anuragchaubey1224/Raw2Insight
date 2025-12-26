@@ -155,7 +155,7 @@ app.add_middleware(
 )
 
 # API Router for versioning
-api_router = APIRouter()
+api_router = APIRouter(prefix="/api/v1")
 
 
 # Mount static files for production (Frontend + API in same container)
@@ -1513,11 +1513,18 @@ async def save_extracted_data(
             detail="Document not found or you don't have permission to edit it"
         )
     
-    # Update extracted data
+    # Update extracted data (parse JSON string first)
+    import json
     if not doc.extracted_data:
-        doc.extracted_data = {}
+        extracted_dict = {}
+    else:
+        try:
+            extracted_dict = json.loads(doc.extracted_data) if isinstance(doc.extracted_data, str) else doc.extracted_data
+        except:
+            extracted_dict = {}
     
-    doc.extracted_data['items'] = request.items
+    extracted_dict['items'] = request.items
+    doc.extracted_data = json.dumps(extracted_dict)
     doc.updated_at = datetime.utcnow()
     
     db.commit()
@@ -1751,20 +1758,22 @@ async def download_csv(job_id: str):
         )
 
 
-# Include API router with versioning BEFORE catch-all routes
+# Include API router with versioning (/api/v1 prefix already in router definition)
 app.include_router(api_router)
 
 # ==================== FRONTEND SERVING (PRODUCTION) ====================
+# NOTE: Frontend is now deployed separately on Vercel
+# This section is kept for backward compatibility but won't interfere with API
 
-@app.get("/{full_path:path}")
+@app.get("/{full_path:path}", include_in_schema=False)
 async def serve_frontend(full_path: str):
     """
-    Serve Next.js frontend in production (Docker deployment)
-    This catches all non-API routes and serves the frontend
+    Serve frontend in production (Docker deployment)
+    This catches all non-API routes - only works when frontend is bundled
     """
-    # Check if this is an API route (skip frontend serving)
-    if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("redoc"):
-        raise HTTPException(status_code=404, detail="API endpoint not found")
+    # Skip API routes completely - they're handled by api_router above
+    if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("redoc") or full_path.startswith("health") or full_path.startswith("openapi.json"):
+        raise HTTPException(status_code=404, detail="Not found")
     
     # Path to frontend build directory
     frontend_dir = Path(__file__).parent.parent.parent / "frontend"
