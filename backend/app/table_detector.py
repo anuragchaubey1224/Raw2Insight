@@ -101,7 +101,7 @@ class TableDetector:
             # Try to find a more intelligent table region by looking for common table headers
             # This is a smarter fallback that looks for actual table content
             return [{
-                "bbox": {
+                "table_bbox": {
                     "x1": 0,
                     "y1": int(height * 0.3),  # Start from 30% down the image to skip headers
                     "x2": width,

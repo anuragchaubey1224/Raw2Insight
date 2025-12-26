@@ -1062,10 +1062,14 @@ class BusinessSchemaParser:
             if text_parts and numbers:
                 description = ' '.join(text_parts)
                 
+                # Skip field labels with colons (Invoice Number:, Invoice Date:, etc.)
+                if ':' in description:
+                    continue
+                
                 # Skip obvious non-items (be more specific)
-                skip_keywords = ['TOTAL:', 'SUBTOTAL:', 'TAX:', 'CGST:', 'SGST:', 'CASH:', 'CARD:', 'PAYMENT:', 'THANK YOU', 'ADDRESS:', 'PHONE:', 'GST:']
+                skip_keywords = ['TOTAL:', 'SUBTOTAL:', 'TAX:', 'CGST:', 'SGST:', 'CASH:', 'CARD:', 'PAYMENT:', 'THANK YOU', 'ADDRESS:', 'PHONE:', 'GST:', 'INVOICE', 'BILL', 'DATE', 'TIME', 'GSTIN', 'S.TAX']
                 description_upper = description.upper()
-                if any(description_upper.startswith(keyword) or description_upper.endswith(keyword) for keyword in skip_keywords):
+                if any(keyword in description_upper for keyword in skip_keywords):
                     continue
                 
                 # Create item

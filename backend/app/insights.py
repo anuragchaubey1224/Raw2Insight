@@ -254,7 +254,7 @@ class SpendingInsights:
         price_bins = [0, 10, 50, 100, 500, 1000, float('inf')]
         price_labels = ['<10', '10-50', '50-100', '100-500', '500-1000', '>1000']
         df['price_range'] = pd.cut(df['unit_price'], bins=price_bins, labels=price_labels, include_lowest=True)
-        price_dist = df.groupby('price_range')['line_total'].sum()
+        price_dist = df.groupby('price_range', observed=True)['line_total'].sum()
         patterns['price_ranges'] = {str(range_): float(amount) for range_, amount in price_dist.items()}
         
         # Quantity patterns
