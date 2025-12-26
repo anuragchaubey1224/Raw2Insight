@@ -451,5 +451,5 @@ if __name__ == "__main__":
     ]
     
     insights = generate_spending_insights(sample_docs)
-    print("Generated Insights:")
-    print(json.dumps(insights, indent=2, default=str))
+    logger.info("Generated Insights:")
+    logger.info(json.dumps(insights, indent=2, default=str))

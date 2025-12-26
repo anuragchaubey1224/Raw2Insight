@@ -18,7 +18,7 @@ class Settings(BaseModel):
     """Application settings loaded from environment variables"""
     
     # Application
-    app_name: str = os.getenv("APP_NAME", "Raw2Insight API")
+    app_name: str = os.getenv("APP_NAME", "AutoDoc Extractor API")
     version: str = os.getenv("VERSION", "2.0.0")
     debug: bool = os.getenv("DEBUG", "false").lower() == "true"
     environment: str = os.getenv("ENVIRONMENT", "production")
@@ -27,6 +27,16 @@ class Settings(BaseModel):
     secret_key: str = os.getenv("SECRET_KEY", "your-secret-key-change-this-in-production")
     jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
     access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
+    
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Validate SECRET_KEY in production
+        if self.environment == "production" and self.secret_key == "your-secret-key-change-this-in-production":
+            raise ValueError(
+                "❌ CRITICAL: Using default SECRET_KEY in production environment! "
+                "Set a secure SECRET_KEY in environment variables. "
+                "Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
     
     # Database
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./data/autodoc.db")
@@ -66,4 +76,3 @@ class Settings(BaseModel):
 def get_settings() -> Settings:
     """Get cached settings instance"""
     return Settings()
-

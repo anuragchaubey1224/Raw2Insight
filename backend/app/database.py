@@ -83,8 +83,10 @@ class Document(Base):
 # Database initialization
 def init_db():
     """Create all tables"""
+    import logging
+    logger = logging.getLogger(__name__)
     Base.metadata.create_all(bind=engine)
-    print("✅ Database initialized successfully")
+    logger.info("✅ Database initialized successfully")
 
 
 def get_db():

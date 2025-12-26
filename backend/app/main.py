@@ -1,5 +1,5 @@
 """
-Raw2Insight API v2.0
+AutoDoc Extractor API v2.0
 Industry-grade FastAPI backend with document processing pipeline
 Enhanced with rate limiting, structured logging, and standardized error handling
 """
@@ -137,19 +137,25 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS configuration
-allowed_origins = settings.cors_origins.split(",") if settings.cors_origins != "*" else ["*"]
+# CORS configuration - From environment variable or default
+cors_origins_str = settings.cors_origins
+if cors_origins_str == "*":
+    origins = ["*"]
+else:
+    origins = [origin.strip() for origin in cors_origins_str.split(",")]
+
+logger.info(f"CORS enabled for origins: {origins}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 
 # API Router for versioning
-api_router = APIRouter(prefix="/api/v1")
+api_router = APIRouter()
 
 
 # Mount static files for production (Frontend + API in same container)
@@ -195,7 +201,7 @@ def clear_job_status():
     status_file = Path("tmp/job_status.json")
     if status_file.exists():
         status_file.unlink()
-    print("✅ Job status cleared")
+    logger.info("✅ Job status cleared")
 
 
 # Load existing job status on startup
@@ -1562,10 +1568,11 @@ async def get_job_result(job_id: str):
         result_data = {
             "job_id": job_id,
             "status": "completed",
-            "extracted_data": {},
+            "extracted": {},  # Changed from extracted_data to extracted
             "insights": {},
             "tables": [],
-            "ocr_results": {}
+            "ocr_results": {},
+            "files": {}  # Add files section for frontend compatibility
         }
         
         # Load insights.json if exists
@@ -1590,7 +1597,12 @@ async def get_job_result(job_id: str):
         extracted_file = results_dir / "extracted.json"  # Fixed: correct filename
         if extracted_file.exists():
             with open(extracted_file, 'r', encoding='utf-8') as f:
-                result_data["extracted_data"] = json.load(f)
+                result_data["extracted"] = json.load(f)  # Changed to extracted
+        
+        # Add CSV file URL if exists
+        csv_file = results_dir / "extracted.csv"
+        if csv_file.exists():
+            result_data["csv_url"] = f"/download/{job_id}.csv"
         
         return result_data
         
@@ -1601,6 +1613,146 @@ async def get_job_result(job_id: str):
             detail=f"Failed to load results: {str(e)}"
         )
 
+
+@api_router.put("/result/{job_id}")
+async def update_job_result(job_id: str, updated_data: dict):
+    """
+    Update the extracted data for a completed processing job.
+    
+    Args:
+        job_id: Unique job identifier
+        updated_data: Updated extracted data from frontend
+        
+    Returns:
+        JSON response confirming the update
+    """
+    if job_id not in JOB_STATUS:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Job not found: {job_id}"
+        )
+    
+    job_info = JOB_STATUS[job_id]
+    
+    # Check if job is completed
+    if job_info["status"] != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot update data for incomplete job"
+        )
+    
+    try:
+        script_dir = Path(__file__).parent.parent
+        results_dir = script_dir / "tmp" / "results" / job_id
+        
+        # Ensure results directory exists
+        if not results_dir.exists():
+            raise HTTPException(
+                status_code=404,
+                detail="Results directory not found"
+            )
+        
+        # Save updated extracted data
+        extracted_file = results_dir / "extracted.json"
+        
+        # Add timestamp to track when data was modified
+        updated_data['last_modified'] = datetime.now().isoformat()
+        updated_data['modified_by'] = 'user'
+        
+        with open(extracted_file, 'w', encoding='utf-8') as f:
+            json.dump(updated_data, f, indent=2, ensure_ascii=False, default=str)
+        
+        # Also save as CSV for download
+        csv_file = results_dir / "extracted.csv"
+        try:
+            import csv
+            with open(csv_file, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                
+                # Write header info
+                writer.writerow(['Vendor', updated_data.get('vendor', '')])
+                writer.writerow(['Date', updated_data.get('date', '')])
+                writer.writerow(['Currency', updated_data.get('currency', '')])
+                writer.writerow(['Total', updated_data.get('total', 0)])
+                writer.writerow(['Tax', updated_data.get('tax', 0)])
+                writer.writerow([''])  # Empty row
+                
+                # Write items header
+                writer.writerow(['Description', 'Qty', 'Unit Price', 'Line Total', 'Category'])
+                
+                # Write items
+                for item in updated_data.get('items', []):
+                    writer.writerow([
+                        item.get('description', ''),
+                        item.get('qty', 0),
+                        item.get('unit_price', 0),
+                        item.get('line_total', 0),
+                        item.get('category', '')
+                    ])
+        except Exception as csv_error:
+            logger.warning(f"Failed to update CSV file: {csv_error}")
+        
+        logger.info(f"Successfully updated extracted data for job {job_id}")
+        
+        return {
+            "job_id": job_id,
+            "status": "success",
+            "message": "Extracted data updated successfully",
+            "updated_at": updated_data['last_modified']
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to update results for job {job_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update results: {str(e)}"
+        )
+
+
+@api_router.get("/download/{job_id}.csv")
+async def download_csv(job_id: str):
+    """
+    Download CSV file for a completed job
+    
+    Args:
+        job_id: Unique job identifier
+        
+    Returns:
+        CSV file response
+    """
+    if job_id not in JOB_STATUS:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Job not found: {job_id}"
+        )
+    
+    try:
+        script_dir = Path(__file__).parent.parent
+        results_dir = script_dir / "tmp" / "results" / job_id
+        csv_file = results_dir / "extracted.csv"
+        
+        if not csv_file.exists():
+            raise HTTPException(
+                status_code=404,
+                detail="CSV file not found"
+            )
+        
+        return FileResponse(
+            path=csv_file,
+            filename=f"extracted_data_{job_id}.csv",
+            media_type="text/csv"
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to download CSV for job {job_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to download CSV: {str(e)}"
+        )
+
+
+# Include API router with versioning BEFORE catch-all routes
+app.include_router(api_router)
 
 # ==================== FRONTEND SERVING (PRODUCTION) ====================
 
@@ -1673,9 +1825,9 @@ async def serve_root():
         }
     )
 
-# Serve frontend index.html for root and SPA routes
-@app.get("/{full_path:path}")
-async def serve_frontend(full_path: str = ""):
+# Serve frontend index.html for root and SPA routes (catch-all route)
+@app.get("/{full_path:path}", include_in_schema=False)
+async def serve_frontend_catchall(full_path: str = ""):
     """Serve frontend static files and handle SPA routing"""
     # Check if it's an API route (should not reach here)
     if full_path.startswith(("api/", "auth/", "upload", "process", "status", "result", "download", "jobs", "cleanup", "health", "docs", "openapi.json", "my-documents")):
@@ -1709,9 +1861,6 @@ async def serve_frontend(full_path: str = ""):
         content={"detail": f"File not found: {full_path}"}
     )
 
-# Include API router with versioning
-app.include_router(api_router)
-
 if __name__ == "__main__":
     import uvicorn
     
@@ -1719,4 +1868,6 @@ if __name__ == "__main__":
     script_dir = Path(__file__).parent.parent  # Go up to backend/ directory
     (script_dir / "tmp").mkdir(parents=True, exist_ok=True)
     
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Use port 7860 for Hugging Face Spaces compatibility
+    port = int(os.environ.get("PORT", 7860))
+    uvicorn.run(app, host="0.0.0.0", port=port)
