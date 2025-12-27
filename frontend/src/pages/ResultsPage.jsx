@@ -69,7 +69,7 @@ function ResultsPage() {
     )
   }
 
-  const extracted = results.extracted_data || {}
+  const extracted = results.extracted || results.extracted_data || {}
   const items = extracted.items || []
 
   return (
@@ -158,15 +158,15 @@ function ResultsPage() {
                     {items.map((item, index) => (
                       <tr key={index}>
                         <td className="table-cell">{item.description || '-'}</td>
-                        <td className="table-cell">{item.quantity || '-'}</td>
+                        <td className="table-cell">{item.qty || item.quantity || '-'}</td>
                         <td className="table-cell">
                           {item.unit_price
                             ? formatCurrency(parseFloat(item.unit_price))
                             : '-'}
                         </td>
                         <td className="table-cell font-medium">
-                          {item.amount
-                            ? formatCurrency(parseFloat(item.amount))
+                          {item.line_total || item.amount
+                            ? formatCurrency(parseFloat(item.line_total || item.amount))
                             : '-'}
                         </td>
                       </tr>
