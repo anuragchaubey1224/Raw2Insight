@@ -50,11 +50,11 @@ venv.bak/
 # ========================================
 # Tests & Debug Files (Local Development Only)
 # ========================================
-backend/tests/
-tests/
-*_test.py
-test_*.py
-test_*.txt
+# Track real pytest suites under backend/tests/; keep scratch/debug scripts out
+backend/tests/*
+!backend/tests/test_*.py
+!backend/tests/conftest.py
+backend/tests/test_api_endpoints.py
 debug_*.py
 check_*.py
 fix_*.py
