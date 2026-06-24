@@ -6,6 +6,7 @@ import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import ProgressBar from '../components/common/ProgressBar'
 import Alert from '../components/common/Alert'
+import UploadModeToggle from '../components/common/UploadModeToggle'
 import { FiUpload, FiFile, FiX } from 'react-icons/fi'
 import { formatFileSize, isValidFileType } from '../utils/helpers'
 import { MAX_FILE_SIZE, ALLOWED_FILE_EXTENSIONS } from '../utils/constants'
@@ -100,6 +101,7 @@ function UploadPage() {
       </div>
 
       <div className="max-w-2xl mx-auto">
+        <UploadModeToggle mode="single" />
         <Card>
           {!uploading ? (
             <>

@@ -6,33 +6,13 @@ import Card from '../components/common/Card'
 import Button from '../components/common/Button'
 import ProgressBar from '../components/common/ProgressBar'
 import Alert from '../components/common/Alert'
+import UploadModeToggle from '../components/common/UploadModeToggle'
 import { FiUpload, FiFile, FiX } from 'react-icons/fi'
 import { formatFileSize, isValidFileType } from '../utils/helpers'
 import { MAX_FILE_SIZE, ALLOWED_FILE_EXTENSIONS } from '../utils/constants'
 import toast from 'react-hot-toast'
 
 const MAX_BILLS = 10 // matches backend MAX_BATCH_SIZE
-
-function ModeToggle({ mode }) {
-  const navigate = useNavigate()
-  const base = 'px-4 py-1.5 rounded-md text-sm font-medium transition-colors'
-  return (
-    <div className="inline-flex rounded-lg border border-gray-300 p-1 mb-6">
-      <button
-        onClick={() => navigate('/upload')}
-        className={`${base} ${mode === 'single' ? 'bg-primary-600 text-white' : 'text-gray-600 hover:text-gray-900'}`}
-      >
-        Single
-      </button>
-      <button
-        onClick={() => navigate('/batch')}
-        className={`${base} ${mode === 'batch' ? 'bg-primary-600 text-white' : 'text-gray-600 hover:text-gray-900'}`}
-      >
-        Batch
-      </button>
-    </div>
-  )
-}
 
 function BatchUploadPage() {
   const [files, setFiles] = useState([])
@@ -108,7 +88,7 @@ function BatchUploadPage() {
       </div>
 
       <div className="max-w-2xl mx-auto">
-        <ModeToggle mode="batch" />
+        <UploadModeToggle mode="batch" />
         <Card>
           {!uploading ? (
             <>
