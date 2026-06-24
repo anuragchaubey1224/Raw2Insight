@@ -4,7 +4,7 @@
 
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Raw2Insight'
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1'
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
 
 export const MAX_FILE_SIZE = import.meta.env.VITE_MAX_FILE_SIZE || 10485760 // 10MB
 

@@ -28,13 +28,9 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
-    console.log('🔵 API Request:', config.method.toUpperCase(), config.url)
     return config
   },
-  (error) => {
-    console.error('❌ Request Error:', error)
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
 uploadClient.interceptors.request.use(
@@ -43,49 +39,33 @@ uploadClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
-    console.log('📤 Upload Request:', config.url)
     return config
   },
-  (error) => {
-    console.error('❌ Upload Request Error:', error)
-    return Promise.reject(error)
-  }
+  (error) => Promise.reject(error)
 )
 
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
-  (response) => {
-    console.log('✅ API Response:', response.status, response.config.url)
-    return response
-  },
+  (response) => response,
   (error) => {
-    console.error('❌ API Error:', error.response?.status, error.response?.data || error.message)
-    
     // Handle 401 Unauthorized - redirect to login
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('user')
       window.location.href = '/login'
     }
-    
     return Promise.reject(error)
   }
 )
 
 uploadClient.interceptors.response.use(
-  (response) => {
-    console.log('✅ Upload Response:', response.status)
-    return response
-  },
+  (response) => response,
   (error) => {
-    console.error('❌ Upload Error:', error.response?.status, error.response?.data || error.message)
-    
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('user')
       window.location.href = '/login'
     }
-    
     return Promise.reject(error)
   }
 )

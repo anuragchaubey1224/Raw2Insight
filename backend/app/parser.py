@@ -786,53 +786,6 @@ class BusinessSchemaParser:
         logger.info(f"Deduplication: {len(items)} → {len(unique_items)} items")
         return unique_items
     
-    def apply_bill_corrections(self, items: List[dict]) -> List[dict]:
-        """
-        Apply specific corrections for known bill parsing issues
-        
-        Args:
-            items: List of item dictionaries
-            
-        Returns:
-            List of corrected items
-        """
-        corrected_items = []
-        
-        for item in items:
-            description = str(item.get('description', '')).strip()
-            qty = float(item.get('qty', 1))
-            unit_price = float(item.get('unit_price', 0))
-            line_total = float(item.get('line_total', 0))
-            
-            # Apply specific corrections based on known issues
-            if 'tandoori chicken' in description.lower():
-                # Fix Tandoori chicken line total
-                if abs(line_total - 295.0) < 1.0:  # Currently showing 295.00
-                    corrected_item = item.copy()
-                    corrected_item['line_total'] = 309.75  # Correct total from bill
-                    corrected_items.append(corrected_item)
-                    logger.info(f"🔧 Corrected Tandoori chicken total: 295.00 → 309.75")
-                else:
-                    corrected_items.append(item)
-            
-            elif 'lasooni dal tadka' in description.lower():
-                # Fix Lasooni Dal Tadka qty and price
-                if qty == 14 or abs(unit_price - 19.64) < 1.0:  # Currently wrong values
-                    corrected_item = item.copy()
-                    corrected_item['qty'] = 1.0  # Correct qty from bill
-                    corrected_item['unit_price'] = 275.0  # Correct price from bill
-                    corrected_item['line_total'] = 288.75  # Correct total from bill
-                    corrected_items.append(corrected_item)
-                    logger.info(f"🔧 Corrected Lasooni Dal Tadka: Qty=14→1, Price=19.64→275.00")
-                else:
-                    corrected_items.append(item)
-            
-            else:
-                # No correction needed
-                corrected_items.append(item)
-        
-        return corrected_items
-    
     def _is_receipt_document(self, tables_list: List[dict]) -> bool:
         """
         Detect if document is a receipt (not a structured table invoice)
@@ -2672,7 +2625,7 @@ class BusinessSchemaParser:
         if match:
             try:
                 return float(match.group())
-            except:
+            except (ValueError, TypeError):
                 return 0.0
         
         return 0.0

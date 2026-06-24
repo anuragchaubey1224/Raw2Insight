@@ -358,7 +358,7 @@ def save_ocr_output(job_id: str, ocr_results: Dict, output_dir: Path = None):
             }
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(error_results, f, indent=2, ensure_ascii=False)
-        except:
+        except Exception:
             pass
 
 

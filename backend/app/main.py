@@ -173,7 +173,7 @@ def load_job_status():
         try:
             with open(status_file, 'r') as f:
                 JOB_STATUS = json.load(f)
-        except:
+        except Exception:
             JOB_STATUS = {}
 
 def save_job_status():
@@ -621,7 +621,7 @@ async def process_document_pipeline(
         # Clean up on failure
         try:
             delete_tmp_job(job_id)
-        except:
+        except Exception:
             pass
         
         raise HTTPException(status_code=500, detail=f"Document processing failed: {str(e)}")
@@ -808,7 +808,7 @@ async def run_complete_pipeline(
                 f.write(f"Error: {error_msg}\n\n")
                 f.write("Full Traceback:\n")
                 f.write(traceback.format_exc())
-        except:
+        except Exception:
             pass
         
         update_job_status(job_id, "failed", error=error_msg)
@@ -1092,7 +1092,8 @@ def process_tables_for_job(job_id: str, processed_paths: List[str], ocr_results:
             
             # Log each detected table
             for i, table in enumerate(detected_tables):
-                logger.info(f"  Table {i+1}: bbox={table['bbox']}, confidence={table['confidence']}, label={table['label']}")
+                bbox = table.get('table_bbox') or table.get('bbox', {})
+                logger.info(f"  Table {i+1}: bbox={bbox}, confidence={table['confidence']}, label={table['label']}")
             
             # DEBUG: Save table detection visualization
             if detected_tables:
@@ -1454,7 +1455,7 @@ async def get_my_documents(
                 data = json.loads(doc.extracted_data) if isinstance(doc.extracted_data, str) else doc.extracted_data
                 items = data.get('items', [])
                 items_count = len(items) if isinstance(items, list) else None
-            except:
+            except Exception:
                 pass
         
         document_list.append(DocumentListItem(
@@ -1520,7 +1521,7 @@ async def save_extracted_data(
     else:
         try:
             extracted_dict = json.loads(doc.extracted_data) if isinstance(doc.extracted_data, str) else doc.extracted_data
-        except:
+        except Exception:
             extracted_dict = {}
     
     extracted_dict['items'] = request.items
