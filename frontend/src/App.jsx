@@ -7,6 +7,8 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import DashboardPage from './pages/DashboardPage'
 import UploadPage from './pages/UploadPage'
+import BatchUploadPage from './pages/BatchUploadPage'
+import BatchResultsPage from './pages/BatchResultsPage'
 import ProcessingPage from './pages/ProcessingPage'
 import ResultsPage from './pages/ResultsPage'
 import HistoryPage from './pages/HistoryPage'
@@ -76,6 +78,16 @@ function App() {
         <Route path="/upload" element={
           <ProtectedRoute>
             <UploadPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/batch" element={
+          <ProtectedRoute>
+            <BatchUploadPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/batch/:batchId/results" element={
+          <ProtectedRoute>
+            <BatchResultsPage />
           </ProtectedRoute>
         } />
         <Route path="/processing/:jobId" element={
