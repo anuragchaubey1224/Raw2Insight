@@ -1,7 +1,7 @@
 """
 Database models and setup for user authentication and document history
 """
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, ForeignKey, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, ForeignKey, Boolean, Float, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.pool import QueuePool
@@ -70,22 +70,69 @@ class Document(Base):
     item_count = Column(Integer, default=0)
     extracted_data = Column(Text, nullable=True)  # JSON string
     error_message = Column(Text, nullable=True)
+    # Batch processing: groups documents uploaded together (nullable -> single uploads have no batch)
+    batch_id = Column(String, index=True, nullable=True)
+    confidence = Column(Float, nullable=True)  # overall extraction confidence (0-1)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationship
     user = relationship("User", back_populates="documents")
-    
+
     def __repr__(self):
         return f"<Document(filename='{self.filename}', status='{self.status}')>"
 
 
+class Batch(Base):
+    """A group of documents uploaded and processed together (the batch feature)."""
+    __tablename__ = "batches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    batch_id = Column(String, unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    total_count = Column(Integer, default=0)
+    done_count = Column(Integer, default=0)
+    failed_count = Column(Integer, default=0)
+    status = Column(String, default="processing")  # processing, completed, partial, failed
+    engine = Column(String, default="local")        # local, llm, compare
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<Batch(batch_id='{self.batch_id}', {self.done_count}/{self.total_count})>"
+
+
 # Database initialization
+def _ensure_schema(logger):
+    """Idempotently add new columns to existing tables (lightweight migration).
+
+    create_all() creates missing TABLES but never alters existing ones, so when the
+    `documents` table already exists (e.g. the deployed Postgres) we add new columns here.
+    Cross-DB safe: inspects current columns, only ALTERs when missing.
+    """
+    try:
+        insp = inspect(engine)
+        if "documents" not in insp.get_table_names():
+            return  # fresh DB: create_all already built it with the new columns
+        existing = {c["name"] for c in insp.get_columns("documents")}
+        additions = {"batch_id": "VARCHAR", "confidence": "FLOAT"}
+        with engine.begin() as conn:
+            for col, sqltype in additions.items():
+                if col not in existing:
+                    conn.execute(text(f"ALTER TABLE documents ADD COLUMN {col} {sqltype}"))
+                    logger.info(f"🔧 Migration: added documents.{col}")
+    except Exception as e:
+        logger.warning(f"⚠️ Schema migration skipped/failed: {e}")
+
+
 def init_db():
-    """Create all tables"""
+    """Create all tables and apply lightweight migrations"""
     import logging
     logger = logging.getLogger(__name__)
     Base.metadata.create_all(bind=engine)
+    _ensure_schema(logger)
     logger.info("✅ Database initialized successfully")
 
 

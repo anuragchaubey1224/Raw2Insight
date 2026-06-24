@@ -47,7 +47,14 @@ class Settings(BaseModel):
     # File Upload
     max_upload_size_mb: int = int(os.getenv("MAX_UPLOAD_SIZE_MB", "10"))
     allowed_file_extensions: List[str] = [".pdf", ".jpg", ".jpeg", ".png"]
-    
+
+    # Batch processing
+    max_batch_size: int = int(os.getenv("MAX_BATCH_SIZE", "10"))        # max bills per batch (1 image or 1 PDF page = 1 bill)
+    max_concurrency: int = int(os.getenv("MAX_CONCURRENCY", "1"))       # sequential by default (CPU-bound; see DESIGN_DECISIONS.md)
+
+    # Optional Vision-LLM engine (OFF by default — the custom pipeline is the primary path)
+    enable_llm: bool = os.getenv("ENABLE_LLM", "false").lower() == "true"
+
     # OCR
     ocr_language: str = os.getenv("OCR_LANGUAGE", "eng")
     ocr_dpi: int = int(os.getenv("OCR_DPI", "300"))
