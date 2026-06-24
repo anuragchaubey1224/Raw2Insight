@@ -190,7 +190,7 @@ function UploadPage() {
                   {getStageText(progress.stage)}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Please don't close this page
+                  Please don&apos;t close this page
                 </p>
               </div>
 
