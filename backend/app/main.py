@@ -722,10 +722,36 @@ async def run_complete_pipeline(
         table_results = process_tables_for_job(job_id, processed_paths, ocr_results)
         logger.info(f"Phase 4 completed: {len(table_results.get('tables', []))} tables found")
         
-        # Phase 5: Business Schema Extraction
-        update_job_status(job_id, "processing", "Phase 5: Extracting business schema")
-        business_results = process_document_to_business_schema(job_id)
-        logger.info(f"Phase 5 completed: Business schema extracted")
+        # Phase 5: Business Schema — custom field-detector PRIMARY, rule parser as fallback.
+        # The learned KIE pipeline (YOLO field-detector -> PaddleOCR per box -> spatial assembly)
+        # is the real extraction core; the de-hardcoded rule parser only runs when the detector
+        # finds too few fields (out-of-distribution receipt). Either path writes extracted.json/csv
+        # via the same saver, so /result, CSV/Excel export and the frontend are unaffected.
+        update_job_status(job_id, "processing", "Phase 5: Extracting fields (custom detector)")
+        business_results = None
+        try:
+            from app.field_extractor import extract_business_schema
+            # Run the detector on the RAW image (it was trained on raw receipts); for PDFs use the
+            # first rendered page.
+            src_image = str(input_file_path)
+            if input_file_path.suffix.lower() not in (".jpg", ".jpeg", ".png"):
+                src_image = processed_paths[0] if processed_paths else src_image
+            schema, used = extract_business_schema(src_image)
+            if used:
+                from app.parser import BusinessSchemaParser
+                BusinessSchemaParser().save_business_schema(job_id, schema)  # writes extracted.json/csv
+                business_results = schema
+                logger.info(
+                    f"Phase 5: field-detector used ({schema['item_count']} items, "
+                    f"conf {schema.get('confidence')})"
+                )
+        except Exception as e:
+            logger.warning(f"Field-detector extraction failed, falling back to rule parser: {e}")
+
+        if business_results is None:
+            business_results = process_document_to_business_schema(job_id)
+            business_results.setdefault("engine", "rule_parser")
+            logger.info("Phase 5 completed: rule-parser fallback used")
         
         # Phase 6: ML Insights
         update_job_status(job_id, "processing", "Phase 6: Generating ML insights")
@@ -1759,8 +1785,31 @@ async def download_csv(job_id: str):
         )
 
 
+@api_router.get("/document/{job_id}/image")
+async def get_document_image(job_id: str):
+    """Serve the original uploaded receipt image for a job (used by the detected-fields overlay).
+
+    job_id-guarded like /download/{job_id}.csv (an <img> tag can't send the JWT header). Images only
+    — for PDF uploads there is no raster raw_input, so the overlay is simply skipped client-side.
+    """
+    upload_dir = Path(__file__).parent.parent / "tmp" / "uploads" / job_id
+    image_exts = {".jpg", ".jpeg", ".png"}
+    image_file = next(
+        (p for p in sorted(upload_dir.glob("raw_input.*")) if p.suffix.lower() in image_exts),
+        None,
+    ) if upload_dir.exists() else None
+    if image_file is None:
+        raise HTTPException(status_code=404, detail="Receipt image not found")
+    media = "image/png" if image_file.suffix.lower() == ".png" else "image/jpeg"
+    return FileResponse(path=image_file, media_type=media)
+
+
 # Include API router with versioning (/api/v1 prefix already in router definition)
 app.include_router(api_router)
+
+# Batch processing router (/api/v1/batch/...) — registered before the catch-all frontend route
+from app.batch_router import router as batch_router  # noqa: E402
+app.include_router(batch_router)
 
 # ==================== FRONTEND SERVING (PRODUCTION) ====================
 # NOTE: Frontend is now deployed separately on Vercel

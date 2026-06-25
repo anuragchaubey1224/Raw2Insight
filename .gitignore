@@ -30,6 +30,7 @@ MANIFEST
 # ========================================
 venv/
 venv_auto/
+venv_ml/
 env/
 ENV/
 env.bak/
@@ -95,7 +96,8 @@ runs/
 models/*.pt
 models/*.pth
 backend/models/*.pt
-!backend/models/table_detector_best.pt
+# Ship the custom-trained YOLOv8 field-detector (mAP@0.5 0.782) — needed for deployment
+!backend/models/field_detector.pt
 
 # ========================================
 # Data Folder (User Data & History)
@@ -229,6 +231,13 @@ _build/
 # Docker
 # ========================================
 docker-compose.override.yml
+
+# ========================================
+# Local-only planning docs (kept on disk, never pushed)
+# ========================================
+DESIGN_DECISIONS.md
+IMPLEMENTATION_PLAN.md
+TRAINING_COLAB.md
 
 # ========================================
 # Misc Development Files

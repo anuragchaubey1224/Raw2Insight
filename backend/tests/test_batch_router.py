@@ -113,3 +113,39 @@ def test_other_users_batch_is_404(client, session):
     batch = batch_service.create_batch(session, other.id, total_count=1)
     # current client user != owner -> must not leak another user's batch
     assert client.get(f"/api/v1/batch/{batch.batch_id}/status").status_code == 404
+
+
+# ---- upload endpoint (worker stubbed so no real YOLO/OCR runs) ------------------------------
+
+def _img(name="a.jpg"):
+    return ("files", (name, b"\xff\xd8\xff\xf0fakejpegbytes", "image/jpeg"))
+
+
+def test_batch_upload_creates_batch(client, session, user, monkeypatch):
+    monkeypatch.setattr(batch_router, "_run_batch", lambda *a, **k: None)  # don't run extraction
+    r = client.post("/api/v1/batch/upload",
+                    files=[_img("a.jpg"), _img("b.jpg")], data={"engine": "local"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 2 and body["status"] == "processing" and "batch_id" in body
+    # a Batch row + one Document per bill were created
+    batch = batch_service.get_batch(session, body["batch_id"])
+    assert batch.total_count == 2
+    docs = batch_service.get_batch_documents(session, body["batch_id"])
+    assert len(docs) == 2 and all(d.batch_id == body["batch_id"] for d in docs)
+
+
+def test_batch_upload_rejects_unsupported_type(client, monkeypatch):
+    monkeypatch.setattr(batch_router, "_run_batch", lambda *a, **k: None)
+    r = client.post("/api/v1/batch/upload",
+                    files=[("files", ("note.txt", b"hello", "text/plain"))],
+                    data={"engine": "local"})
+    assert r.status_code == 400
+
+
+def test_batch_upload_enforces_cap(client, monkeypatch):
+    monkeypatch.setattr(batch_router, "_run_batch", lambda *a, **k: None)
+    files = [_img(f"{i}.jpg") for i in range(11)]  # 11 > MAX_BATCH_SIZE (10)
+    r = client.post("/api/v1/batch/upload", files=files, data={"engine": "local"})
+    assert r.status_code == 400
+    assert "10" in r.json()["detail"]

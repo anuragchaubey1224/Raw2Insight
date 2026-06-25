@@ -5,6 +5,7 @@ import Card from '../components/common/Card'
 import Badge from '../components/common/Badge'
 import Button from '../components/common/Button'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import DetectedFieldsOverlay from '../components/common/DetectedFieldsOverlay'
 import { FiDownload, FiArrowLeft, FiDollarSign, FiCalendar, FiMapPin } from 'react-icons/fi'
 import { formatCurrency, formatDate } from '../utils/helpers'
 import toast from 'react-hot-toast'
@@ -71,6 +72,9 @@ function ResultsPage() {
 
   const extracted = results.extracted || results.extracted_data || {}
   const items = extracted.items || []
+  const detectedFields = extracted.detected_fields || []
+  const confidencePct =
+    extracted.confidence != null ? Math.round(extracted.confidence * 100) : null
 
   return (
     <div className="container-custom py-8">
@@ -100,6 +104,32 @@ function ResultsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content - 2 columns */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Detected Fields overlay — visual proof the custom YOLO model located each field */}
+          {detectedFields.length > 0 && (
+            <Card
+              title="Detected Fields"
+              action={
+                <span className="flex items-center gap-2">
+                  {extracted.engine && (
+                    <Badge variant="info">
+                      {extracted.engine === 'local' ? 'Custom YOLO + OCR' : extracted.engine}
+                    </Badge>
+                  )}
+                  {confidencePct != null && (
+                    <Badge variant={confidencePct >= 60 ? 'success' : 'warning'}>
+                      {confidencePct}% confidence
+                    </Badge>
+                  )}
+                </span>
+              }
+            >
+              <p className="text-sm text-gray-500 mb-3">
+                {detectedFields.length} fields located by the custom-trained field-detector.
+              </p>
+              <DetectedFieldsOverlay jobId={results.job_id || jobId} fields={detectedFields} />
+            </Card>
+          )}
+
           {/* Summary Card */}
           <Card title="Document Summary">
             <div className="grid grid-cols-2 gap-4">
