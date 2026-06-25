@@ -63,3 +63,44 @@ def test_confidence_higher_when_math_consistent():
 def test_empty_fields():
     rec = assemble([])
     assert rec["vendor"] is None and rec["items"] == [] and rec["confidence"] == 0.0
+
+
+def test_summary_rows_excluded_from_items():
+    """Footer Subtotal/Tax/Change rows (mislabeled LINE_TOTAL) must not become phantom items."""
+    fields = [
+        {"cls": "ITEM", "bbox": [0, 100, 80, 120], "text": "Latte Coffee", "conf": 0.9},
+        {"cls": "LINE_TOTAL", "bbox": [120, 100, 160, 120], "text": "12.00", "conf": 0.9},
+        {"cls": "ITEM", "bbox": [0, 200, 60, 220], "text": "Subtotal", "conf": 0.6},
+        {"cls": "LINE_TOTAL", "bbox": [120, 200, 160, 220], "text": "12.00", "conf": 0.8},
+        {"cls": "LINE_TOTAL", "bbox": [120, 230, 160, 250], "text": "0.72", "conf": 0.8},  # bare tax amt
+        {"cls": "ITEM", "bbox": [0, 260, 60, 280], "text": "Change", "conf": 0.6},
+        {"cls": "LINE_TOTAL", "bbox": [120, 260, 160, 280], "text": "8.00", "conf": 0.8},
+    ]
+    rec = assemble(fields)
+    assert [it["description"] for it in rec["items"]] == ["Latte Coffee"]
+
+
+def test_total_recovered_when_total_class_missing():
+    """No TOTAL box, but a 'Total (RM)' label + amount in the same row -> recover the grand total."""
+    fields = [
+        {"cls": "OTHER", "bbox": [0, 300, 80, 320], "text": "Total (RM) :", "conf": 0.8},
+        {"cls": "LINE_TOTAL", "bbox": [120, 300, 170, 320], "text": "57.45", "conf": 0.8},
+    ]
+    rec = assemble(fields)
+    assert rec["total"] == 57.45
+
+
+def test_tax_uses_amount_not_label():
+    """TAX fires on the label more than the value; the assembled tax must be the decimal amount."""
+    fields = [
+        {"cls": "TAX", "bbox": [0, 300, 90, 320], "text": "Total GST (RM)", "conf": 0.95},
+        {"cls": "TAX", "bbox": [120, 300, 160, 320], "text": "0.65", "conf": 0.7},
+    ]
+    rec = assemble(fields)
+    assert rec["tax"] == 0.65
+
+
+def test_date_prefix_stripped():
+    fields = [{"cls": "DATE", "bbox": [0, 50, 120, 70], "text": "Date: 12/02/2026", "conf": 0.8}]
+    rec = assemble(fields)
+    assert rec["date"] == "12/02/2026"

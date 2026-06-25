@@ -233,6 +233,19 @@ _build/
 docker-compose.override.yml
 
 # ========================================
+# Eval harness — keep field_eval.py, ignore generated run artifacts
+# ========================================
+backend/eval/_*.txt
+backend/eval/_*.yaml
+backend/eval/results*.json
+backend/eval/val_run/
+
+# ========================================
+# Local test bills (sample receipts for manual testing — not committed)
+# ========================================
+test_bills/
+
+# ========================================
 # Local-only planning docs (kept on disk, never pushed)
 # ========================================
 DESIGN_DECISIONS.md
